@@ -1,11 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
-const mongoose = require("mongoose");
+const Person = require("./models/persons");
 
 const app = express();
-const password = "IvrHWcYLnWFDlkIH";
-const url = `mongodb+srv://aryanwar:${password}@phonebook.yodzzw3.mongodb.net/?retryWrites=true&w=majority`;
 
 morgan.token("body", (req) => JSON.stringify(req.body));
 
@@ -15,15 +14,6 @@ app.use(
 );
 app.use(cors());
 app.use(express.static("build"));
-
-mongoose.set("strictQuery", false);
-mongoose.connect(url);
-
-const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
-});
-const Person = mongoose.model("Person", personSchema);
 
 const generateId = () => {
   return Math.floor(Math.random() * 100);
@@ -45,13 +35,9 @@ app.get("/info", (req, res) => {
 
 app.get("/api/persons/:id", (req, res) => {
   const id = Number(req.params.id);
-  const person = data.find((person) => person.id === id);
-
-  if (person) {
+  Person.findById(id).then((person) => {
     res.json(person);
-  } else {
-    res.status(404).end();
-  }
+  });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -70,21 +56,27 @@ app.post("/api/persons", (req, res) => {
     });
   }
 
-  const existingPerson = data.find((p) => p.name === body.name);
-  if (existingPerson) {
-    return res.status(400).json({
-      error: "name must be unique",
-    });
-  }
+  // const existingPerson = Person.find(person).then((res) => {
+  //   return res;
+  // });
+
+  // if (existingPerson) {
+  //   return res.status(400).json({
+  //     error: "name must be unique",
+  //   });
+  // }
+
   let id = generateId();
-  const person = {
+
+  const person = new Person({
     id: id,
     name: body.name,
     number: body.number,
-  };
+  });
 
-  data = data.concat(person);
-  res.json(person);
+  person.save().then((savedPerson) => {
+    res.json(savedPerson);
+  });
 });
 
 const PORT = process.env.PORT || 3001;
