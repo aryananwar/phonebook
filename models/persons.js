@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const uniqueValidator = require("mongoose-unique-validator");
 require("dotenv").config();
 
 mongoose.set("strictQuery", false);
@@ -18,10 +19,24 @@ mongoose
   });
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {
+    type: String,
+    minLength: 3,
+    required: true,
+  },
+  number: {
+    type: String,
+    required: [true, "number is required"],
+    minlength: 8,
+    validate: {
+      validator: function (v) {
+        return /^\d+$/.test(v) || /^\d{2,3}-\d+$/.test(v);
+      },
+      message: (props) => `${props.value} is not a valid phone number`,
+    },
+  },
 });
-const Person = mongoose.model("Person", personSchema);
+personSchema.plugin(uniqueValidator);
 
 personSchema.set("toJSON", {
   transform: (document, returnedObject) => {
